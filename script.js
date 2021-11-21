@@ -108,7 +108,7 @@ addBtn.addEventListener("click",(e)=>{
 
 // generate ticket when shift click on modal
 modalContainer.addEventListener("keydown",(e)=>{
-  if(e.key == "Shift"){
+  if(e.key == "Enter"){
     let taskText = modalTextContainer.value;
     let ticketId = generateUniqueId(8);
     let ticket = createTicket(modalPriorityColor,taskText, ticketId);
