@@ -2,20 +2,27 @@ const addBtn = document.querySelector(".add-btn");
 const modalContainer = document.querySelector(".modal-container");
 const modalTextContainer = document.querySelector(".modal-text-container");
 const blackModalElt = document.querySelector(".black.modal-priority-color");
+const mainContainer = document.querySelector(".main-container");
+const colors = ["light-orange", "light-green", "light-pink", "black"];
+const modalPriorityColorElts = document.querySelectorAll(".modal-priority-color");
+let modalPriorityColor="black";
 let addFlag = false;
 let removeFlag = false;
 const lockClass = "fa-lock";
 const unLockClass = "fa-lock-open";
-
+let allTickets = document.querySelectorAll(".ticket-container");
+const removeBtn = document.querySelector(".remove-btn");
+const toolboxColors = document.querySelectorAll(".color");
 let ticketObjArr = [];
 
+ticketObjArr = JSON.parse(localStorage.getItem("jira_tickets"));
+loadTickets(ticketObjArr);
 function Ticket(id, task, color){
   this.id = id;
   this.color = color;
   this.task = task;
 }
-let allTickets = document.querySelectorAll(".ticket-container");
-const removeBtn = document.querySelector(".remove-btn");
+
 
 removeBtn.addEventListener("click", (e)=>{
   removeFlag = !removeFlag;
@@ -31,15 +38,11 @@ removeBtn.addEventListener("click", (e)=>{
     removeBtn.classList.remove("active");
   }
 })
-const mainContainer = document.querySelector(".main-container");
 
-const colors = ["light-orange", "light-green", "light-pink", "black"];
-const modalPriorityColorElts = document.querySelectorAll(".modal-priority-color");
-let modalPriorityColor="black";
 
 
 // filtering 
-const toolboxColors = document.querySelectorAll(".color");
+
 toolboxColors.forEach((colorElt) =>{
   colorElt.addEventListener("click", (e) =>{
     // filtering
@@ -58,10 +61,18 @@ toolboxColors.forEach((colorElt) =>{
     // adding filtered tickets to display
     // console.log("all tickets length", ticketObjArr.length);
     // console.log(filteredTicketsArr.length);
-    filteredTicketsArr.forEach((ticketObj) =>{
-      let ticket = createTicket(ticketObj.color, ticketObj.task, ticketObj.id);
-      mainContainer.appendChild(ticket);
+    loadTickets(filteredTicketsArr);
+  });
+
+  colorElt.addEventListener("dblclick", (e) => {
+    // fetch curr tasks on screen and remove them;
+    console.log("reached in double click mode");
+    let currTicketNodes = document.querySelectorAll(".ticket-container");
+    currTicketNodes.forEach((ticketNode) =>{
+      ticketNode.remove();
     });
+    // feed all tickets to screen
+    loadTickets(ticketObjArr);
   });
 }); 
 
@@ -116,14 +127,18 @@ function createTicket(ticketColor, ticketTask, ticketID){
   <div class="ticket-lock"><i class="fas fa-lock"></i></div>
   `;
   let exist = doesTicketObjExist(ticketID);
-  if(!exist){
+  // console.log(exist);
+  if(exist==-1){
+    // console.log(exist);
     let ticketObj = new Ticket(ticketID, ticketTask, ticketColor);
     ticketObjArr.push(ticketObj);
+    console.log(ticketObjArr)
+    updateLocalStorage(ticketObjArr);
   }
   // add event listener for removal at the start of creating ticket itself
-  handleRemoval(ticket);
-  handleLock(ticket);
-  handleColor(ticket);
+  handleRemoval(ticket,ticketID);
+  handleLock(ticket,ticketID);
+  handleColor(ticket,ticketID);
   return ticket;
 };
 
@@ -152,36 +167,46 @@ function chooseModalPriorityModal(targetElt, color){
   modalPriorityColor = color;
 }
 
-function handleRemoval(ticket){
+function handleRemoval(ticket,id){
   ticket.addEventListener("click", (e) =>{
     if(removeFlag){
+      let idx = doesTicketObjExist(id);
+      ticketObjArr.splice(idx, 1);
+      ticketsJson = JSON.stringify(ticketObjArr);
+      localStorage.setItem("jira_tickets", ticketsJson);
       ticket.remove();
     }
   });
 }
 
-function handleLock(ticket){
+function handleLock(ticket, id){
   let lockElt = ticket.querySelector(".ticket-lock");
   let ticketLock = lockElt.children[0];
   ticketLock.addEventListener("click", (e) => {
     let ticketText = ticket.querySelector(".ticket-task");
   // to get the  i tag of icon
-    
+    // let idx = doesTicketObjExist(id);
     let currClass = ticketLock.classList[1];
     if(currClass == lockClass){
       ticketLock.classList.remove(lockClass);
       ticketLock.classList.add(unLockClass);
       ticketText.setAttribute("contenteditable","true");
+      
     }else{
       ticketLock.classList.remove(unLockClass);
       ticketLock.classList.add(lockClass);
       ticketText.setAttribute("contenteditable","false");
     }
+    let taskVal = ticketText.innerText;
+    let idx = doesTicketObjExist(id);
+    ticketObjArr[idx].task = taskVal;
+    let ticketsJson = JSON.stringify(ticketObjArr);
+    localStorage.setItem("jira_tickets", ticketsJson);
   });
 }
 
 
-function handleColor(ticket){
+function handleColor(ticket, id){
   // 1. get the color elt from ticket
   // 2. get current colr and its index in the colors array
   // 3. add click listener - on click move the add color class from next index in a circular fashion
@@ -195,13 +220,33 @@ function handleColor(ticket){
     currIdx = (currIdx + 1)%(colors.length);
     colorElt.classList.remove(currColor);
     colorElt.classList.add(colors[currIdx]);
+    let targetColor = colors[currIdx];
+    let idx = doesTicketObjExist(id);
+    console.log(idx);
+    ticketObjArr[idx].color = targetColor;
+    updateLocalStorage(ticketObjArr);
   });
 }
 
 function doesTicketObjExist(id){
-  for(let i = 0 ; i < ticketObjArr.length; i++){
+  let i;
+  for(i = 0 ; i < ticketObjArr.length; i++){
     let ticketObj = ticketObjArr[i];
-    if(ticketObj.id == id)return true;
+    if(ticketObj.id == id)return i;
   }
-  return false;
+  return -1;
+}
+
+function loadTickets(ticketObjArr){
+  ticketObjArr.forEach((ticketObj) => {
+    let ticket = createTicket(ticketObj.color, ticketObj.task, ticketObj.id);
+    // console.log(ticket);
+    mainContainer.appendChild(ticket);
+  });
+}
+
+function updateLocalStorage(ticketObjArr){
+  let ticketsJson = JSON.stringify(ticketObjArr);
+  console.log(ticketsJson);
+  localStorage.setItem("jira_tickets", ticketsJson);
 }
