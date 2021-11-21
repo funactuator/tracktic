@@ -15,8 +15,10 @@ const removeBtn = document.querySelector(".remove-btn");
 const toolboxColors = document.querySelectorAll(".color");
 let ticketObjArr = [];
 
-ticketObjArr = JSON.parse(localStorage.getItem("jira_tickets"));
-loadTickets(ticketObjArr);
+if(localStorage.getItem("jira_tickets")){
+  ticketObjArr = JSON.parse(localStorage.getItem("jira_tickets"));
+  loadTickets(ticketObjArr);
+}
 function Ticket(id, task, color){
   this.id = id;
   this.color = color;
