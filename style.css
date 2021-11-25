@@ -152,7 +152,7 @@ body{
 
 }
 
-@media screen and (max-width: 768px) and (max-width: 425px) {
+@media screen and (min-width: 550px) and (max-width: 768px) {
   .modal-container{
     height: 40vh;
     width: 50vw;
@@ -164,7 +164,7 @@ body{
   }
 }
 
-@media screen and (max-width: 426px){
+@media screen and (max-width: 550px){
   .modal-container {
     width: 80vw;
     height: 50vh;
